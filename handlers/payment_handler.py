@@ -150,3 +150,7 @@ def handle_access_status(message):
 def handle_back_to_menu(message):
     from handlers.menu_handler import show_main_menu
     show_main_menu(message.chat.id)
+
+# Backward compatibility (if old code calls it)
+def show_payment_options(chat_id):
+    show_payment_menu(chat_id)
