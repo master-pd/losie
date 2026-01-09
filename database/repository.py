@@ -84,3 +84,20 @@ def increment_messages(user_id):
     if user:
         new_count = user["total_messages"] + 1
         save_user(user_id, {"total_messages": new_count})
+
+def get_today_users():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    today = datetime.date.today().isoformat()
+    cursor.execute("SELECT * FROM users WHERE registration_date LIKE ?", (f"{today}%",))
+    users = cursor.fetchall()
+    conn.close()
+    return users
+
+def count_active_premium():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT COUNT(*) FROM users WHERE premium_until > DATETIME('now')")
+    count = cursor.fetchone()[0]
+    conn.close()
+    return count
