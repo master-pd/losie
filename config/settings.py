@@ -6,6 +6,7 @@ BOT_TOKEN = "YOUR_BOT_TOKEN_HERE"  # Replace with real token
 ADMIN_ID = 123456789
 ADMIN_USERNAME = "@ai_mar_pd"
 PAYMENT_NUMBER = "01847634486"
+NAGAD_NUMBER = "01847634486"  
 BOT_NAME = "【 𝗟𝗢𝗦𝗜𝗘 】 ⟵o_𝗢"
 
 # Database
