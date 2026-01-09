@@ -1,9 +1,10 @@
-# handlers/payment_handler.py - Telegram Stars Payment System
+# handlers/payment_handler.py - Telegram Stars Payment System (Full Complete)
 from telebot import types
 from bot.instance import bot
 from services.subscription_service import SubscriptionService
 from config.settings import BOT_NAME
-from datetime import datetime, timedelta
+from handlers.menu_handler import get_main_menu_keyboard  # Import menu
+from datetime import datetime
 import time
 
 subscription_service = SubscriptionService()
@@ -38,7 +39,7 @@ Click below to pay with Stars 👇
 
 def send_stars_invoice(chat_id):
     prices = [
-        types.LabeledPrice("1 Day Premium", 1 * 100),      # Telegram uses smallest unit
+        types.LabeledPrice("1 Day Premium", 1 * 100),
         types.LabeledPrice("7 Days Premium", 7 * 100),
         types.LabeledPrice("30 Days Premium", 30 * 100),
         types.LabeledPrice("90 Days Premium", 90 * 100),
@@ -52,11 +53,11 @@ def send_stars_invoice(chat_id):
                     "Videos, Voice Notes, Dirty Talk – Everything Unlocked 😈\n"
                     "Instant activation after payment!",
         payload="losie_premium_stars_v1",
-        provider_token="",  # Empty for Telegram Stars (XTR)
-        currency="XTR",    # Telegram Stars currency
+        provider_token="",  # Empty for Stars
+        currency="XTR",
         prices=prices,
         start_parameter="premium-stars",
-        photo_url="https://t.me/losie_promo/1",  # তোমার প্রোমো ছবির লিঙ্ক দাও (অপশনাল)
+        photo_url="https://t.me/losie_promo/1",  # চাইলে তোমার ছবির লিঙ্ক দাও
         photo_size=512,
         photo_width=512,
         photo_height=512,
@@ -65,7 +66,6 @@ def send_stars_invoice(chat_id):
         need_email=False,
         need_shipping_address=False,
         is_flexible=False,
-        disable_notification=False,
         protect_content=True
     )
 
@@ -84,43 +84,41 @@ def show_access_status(chat_id, user_id=None):
 ✅ <b>Premium Active!</b>
 
 📅 <b>{days_left} days</b> remaining
-🔥 Enjoy unlimited hot content freely 😏
+🔥 Enjoy unlimited hot content 😏
 
-<i>প্রিমিয়াম চালু আছে – আরও {days_left} দিন ফুল ফান!</i>
+<i>প্রিমিয়াম চালু – আরও {days_left} দিন ফুল ফান!</i>
         """.strip()
+        
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        markup.add("🔙 Back to Menu")
     else:
         text = """
 🔒 <b>No Active Premium</b>
 
-Your access has expired or trial ended.
+Your trial or subscription has ended.
 
-⭐ Pay with Telegram Stars to unlock again!
+⭐ Pay with Telegram Stars to continue!
 
-<i>কোনো প্রিমিয়াম নেই – স্টার দিয়ে আনলক করো!</i>
+<i>প্রিমিয়াম শেষ – স্টার দিয়ে আবার চালু করো!</i>
         """
         show_payment_menu(chat_id)
         return
     
-    markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    markup.add("🔙 Back to Menu")
-    
     bot.send_message(chat_id, text, parse_mode="HTML", reply_markup=markup)
 
-# Pre-checkout handler (required for Stars)
+# Required for Stars payment
 @bot.pre_checkout_query_handler(func=lambda query: True)
 def process_pre_checkout_query(pre_checkout_query):
-    # Always approve Stars payments
     bot.answer_pre_checkout_query(pre_checkout_query.id, ok=True)
 
-# Successful payment handler
+# Successful payment
 @bot.message_handler(content_types=['successful_payment'])
 def handle_successful_payment(message):
     user_id = message.from_user.id
     payload = message.successful_payment.invoice_payload
-    stars_paid = message.successful_payment.total_amount // 100  # Convert from smallest unit
+    stars_paid = message.successful_payment.total_amount // 100
     
     if payload == "losie_premium_stars_v1":
-        # Extend premium by stars_paid days
         subscription_service.extend_premium(user_id, stars_paid)
         
         bot.send_chat_action(user_id, 'typing')
@@ -130,18 +128,16 @@ def handle_successful_payment(message):
 🎉 <b>Payment Successful!</b>
 
 ⭐ You paid <b>{stars_paid} Telegram Stars</b>
-🔥 <b>{stars_paid} days</b> Premium Access Added!
+🔥 <b>{stars_paid} days</b> Premium Added!
 
-Now everything is unlocked again 😈💦
+Everything is unlocked again 😈💦
 
-Enjoy the heat...
-
-<i>পেমেন্ট সাকসেসফুল! {stars_paid} দিনের প্রিমিয়াম যোগ হয়েছে 🔥</i>
+<i>পেমেন্ট সফল! {stars_paid} দিনের প্রিমিয়াম যোগ হয়েছে 🔥</i>
         """.strip()
         
         bot.send_message(user_id, success_text, parse_mode="HTML", reply_markup=get_main_menu_keyboard())
 
-# Button handler for payment menu
+# Button handlers
 @bot.message_handler(func=lambda m: m.text in ["⭐ Pay with Telegram Stars", "⭐ Payment"])
 def handle_pay_with_stars(message):
     send_stars_invoice(message.chat.id)
