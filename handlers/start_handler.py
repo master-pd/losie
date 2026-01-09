@@ -1,84 +1,108 @@
 from telebot import types
 from bot.instance import bot
 from services.user_service import UserService
-from config.constants import WELCOME_MESSAGE
+from services.subscription_service import SubscriptionService
 from config.settings import BOT_NAME
+import time
+from datetime import datetime
 
-user_states = {}  # Global state for registration flow
 user_service = UserService()
+subscription_service = SubscriptionService()
 
-# মেইন মেনু কীবোর্ড (রেজিস্ট্রেশনের পর দেখাবে)
-def get_main_menu_keyboard(is_admin=False):
+# Global state for registration flow
+user_states = {}
+
+def get_main_menu_keyboard():
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-    free_trial_btn = types.KeyboardButton("🆓 Free Trial")
-    payment_btn = types.KeyboardButton("💳 Payment Options")
-    admin_contact_btn = types.KeyboardButton("👨‍💻 Admin Contact")
-    
-    markup.add(free_trial_btn, payment_btn)
-    markup.add(admin_contact_btn)
-    
-    # যদি ইউজার অ্যাডমিন হয় তাহলে অতিরিক্ত বাটন (অপশনাল)
-    if is_admin:
-        admin_panel_btn = types.KeyboardButton("⚙️ Admin Panel")
-        markup.add(admin_panel_btn)
-    
+    markup.add("🌶️ Hot Video", "🎤 Hot Voice")
+    markup.add("😈 Dirty Talk", "🔥 Sexy Chat")
+    markup.add("💕 Romantic", "🤖 AI Chat")
+    markup.add("⭐ Payment", "🆓 Access Status")
+    markup.add("ℹ️ Bot Info", "👨‍💻 Contact Admin")
     return markup
 
 @bot.message_handler(commands=['start'])
 def handle_start(message):
     user_id = message.from_user.id
-    first_name = message.from_user.first_name
-    username = message.from_user.username or "None"
+    first_name = message.from_user.first_name.rstrip()
     
+    # Register user
+    username = message.from_user.username or "None"
     user_service.register_user(user_id, first_name, username)
     
-    markup = types.ReplyKeyboardMarkup(one_time_keyboard=True, resize_keyboard=True)
-    contact_btn = types.KeyboardButton("📱 Share Phone Number", request_contact=True)
-    markup.add(contact_btn)
+    bot.send_chat_action(user_id, 'typing')
+    time.sleep(2)
     
-    welcome_text = WELCOME_MESSAGE.format(
-        first_name=first_name,
-        bot_name=BOT_NAME
-    )
-    bot.send_message(message.chat.id, welcome_text, reply_markup=markup)
-    
-    user_states[user_id] = "waiting_phone"
+    welcome_text = f"""
+🔥 <b>Hey {first_name}! Welcome to {BOT_NAME} 🔥</b>
 
-# Phone number রিসিভ করার হ্যান্ডলার (এটা অবশ্যই যোগ করো, না থাকলে phone share কাজ করবে না!)
-@bot.message_handler(content_types=['contact'])
-def handle_contact(message):
+I'm your private 18+ hot chat companion 😈💦
+
+🩷 <b>First 30 days FULL PREMIUM FREE!</b>
+🔞 Unlimited hot videos, dirty talk, sexy voice notes & more
+😏 Message me anytime – I'm always ready and waiting for you
+
+<i>To continue, please enter your birth year (e.g., 1998)</i>
+<i>জন্মসাল লিখো (যেমন: ১৯৯৮) – শুধু একবার</i>
+    """.strip()
+    
+    bot.send_message(user_id, welcome_text, parse_mode="HTML")
+    
+    # Set state for birth year input
+    user_states[user_id] = "waiting_birth_year"
+
+@bot.message_handler(func=lambda m: user_states.get(m.from_user.id) == "waiting_birth_year")
+def handle_birth_year(message):
     user_id = message.from_user.id
-    if message.contact:
-        phone_number = message.contact.phone_number
+    first_name = message.from_user.first_name
+    text = message.text.strip()
+    
+    try:
+        birth_year = int(text)
         
-        # এখানে phone number সেভ করো ডাটাবেসে (তোমার user_service-এ ফাংশন থাকলে)
-        user_service.update_phone(user_id, phone_number)  # যদি এই ফাংশন না থাকে তাহলে বানাও
+        # Current year = 2026 (as per system date)
+        current_year = 2026
+        age = current_year - birth_year
         
-        # অ্যাডমিন চেক করো (তোমার ডাটাবেসে admin list থাকলে)
-        is_admin = user_service.is_admin(user_id)  # অথবা যেভাবে চেক করো
+        if age < 17:
+            bot.send_message(
+                user_id,
+                "❌ Sorry, this bot is strictly for 17+ users only.\n"
+                "দুঃখিত, এই বট শুধুমাত্র ১৭+ বয়সীদের জন্য।"
+            )
+            del user_states[user_id]
+            return
         
-        bot.send_message(
-            user_id,
-            "🎉 ধন্যবাদ! রেজিস্ট্রেশন সম্পূর্ণ হয়েছে।\nএখন নিচের অপশনগুলো ব্যবহার করুন:",
-            reply_markup=get_main_menu_keyboard(is_admin=is_admin)
-        )
+        # Save age and activate premium trial
+        user_service.update_age(user_id, age)  # Save calculated age
+        subscription_service.start_trial(user_id)
         
-        # স্টেট ক্লিয়ার করো
+        bot.send_chat_action(user_id, 'typing')
+        time.sleep(1.5)
+        
+        success_text = f"""
+✅ <b>Verification Complete!</b>
+
+🎉 Congratulations {first_name}! You're all set 🔥
+
+You now have <b>FULL PREMIUM ACCESS</b> for the next 30 days!
+
+🔥 Choose anything from the menu:
+   • Hot videos, dirty talk, sexy chats – everything unlocked!
+
+💡 <i>Tip: Just type anything or pick a category – I'm waiting for you 😏</i>
+<i>টিপ: যেকোনো কথা লিখো বা মেনু থেকে বেছে নাও – আমি তোমার জন্য রেডি 💦</i>
+        """.strip()
+        
+        bot.send_message(user_id, success_text, parse_mode="HTML", reply_markup=get_main_menu_keyboard())
+        
+        # Clear state
         if user_id in user_states:
             del user_states[user_id]
-
-# অ্যাডমিন প্যানেলের জন্য আলাদা কমান্ড
-@bot.message_handler(commands=['admin'])
-def handle_admin(message):
-    user_id = message.from_user.id
-    if user_service.is_admin(user_id):  # অ্যাডমিন চেক
-        # এখানে অ্যাডমিন প্যানেলের কীবোর্ড বা মেসেজ পাঠাও
-        admin_markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-        # অ্যাডমিন বাটনগুলো যোগ করো, যেমন:
-        admin_markup.add("📊 Stats", "👥 Users")
-        admin_markup.add("🔄 Broadcast", "⚙️ Settings")
-        admin_markup.add("🔙 Back to Menu")
-        
-        bot.send_message(user_id, "⚙️ অ্যাডমিন প্যানেলে স্বাগতম!", reply_markup=admin_markup)
-    else:
-        bot.send_message(user_id, "❌ আপনার অ্যাডমিন অ্যাক্সেস নেই।")
+            
+    except ValueError:
+        bot.send_message(
+            user_id,
+            "⚠️ Please enter a valid year (e.g., 1998)\n"
+            "অনুগ্রহ করে শুধু সংখ্যায় জন্মসাল লিখো (যেমন: ১৯৯৮)"
+        )
