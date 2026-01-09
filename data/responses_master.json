@@ -1,0 +1,18 @@
+{
+  "free": [
+    "ai.json",
+    "reply.json",
+    "chat.json",
+    "love.json",
+    "romantic.json",
+    "flirt_light.json"
+  ],
+  "premium": [
+    "sexy.json",
+    "dirty.json",
+    "hot.json",
+    "hot_video.json",
+    "hot_voice.json",
+    "flirt_intense.json"
+  ]
+}
