@@ -101,3 +101,34 @@ def count_active_premium():
     count = cursor.fetchone()[0]
     conn.close()
     return count
+
+def get_all_users():
+    """সব ইউজারের লিস্ট রিটার্ন করে"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM users")
+    users = cursor.fetchall()
+    conn.close()
+    # SQLite থেকে ডিকশনারি ফরম্যাটে কনভার্ট (যাতে admin_handler-এ কাজ করে)
+    columns = [description[0] for description in cursor.description]
+    return [dict(zip(columns, user)) for user in users]
+
+def get_today_users():
+    """আজকের রেজিস্টার করা ইউজারের লিস্ট"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    today = datetime.date.today().isoformat()
+    cursor.execute("SELECT * FROM users WHERE DATE(registration_date) = ?", (today,))
+    users = cursor.fetchall()
+    conn.close()
+    columns = [description[0] for description in cursor.description]
+    return [dict(zip(columns, user)) for user in users]
+
+def count_active_premium():
+    """অ্যাকটিভ প্রিমিয়াম ইউজারের সংখ্যা"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT COUNT(*) FROM users WHERE expiry_date > DATETIME('now')")
+    count = cursor.fetchone()[0]
+    conn.close()
+    return count
