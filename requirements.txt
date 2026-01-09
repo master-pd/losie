@@ -1,0 +1,6 @@
+pyTelegramBotAPI==4.22.1
+aiofiles==23.2.1
+# Optional: for better performance in production
+gunicorn==22.0.0
+# For async version (if you upgrade later)
+aiogram==3.13.1
