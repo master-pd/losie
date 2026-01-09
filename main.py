@@ -1,52 +1,112 @@
-# main.py - Bot entry point
+# main.py - Advanced Entry Point with Extra Features
+import signal
+import sys
+import time
+from datetime import datetime
+
 from bot.instance import bot
 from database.repository import init_db
 from utils.logger import logger
-from handlers import start_handler, menu_handler, message_handler, payment_handler, admin_handler
+from config.settings import BOT_NAME
+
+# Global variables for uptime tracking
+START_TIME = datetime.now()
+BOT_USERNAME = None
+BOT_ID = None
+
+def signal_handler(sig, frame):
+    """Handle Ctrl+C gracefully"""
+    logger.info("Shutdown signal received. Stopping bot gracefully...")
+    bot.stop_polling()
+    uptime = datetime.now() - START_TIME
+    logger.info(f"Bot stopped. Total uptime: {uptime}")
+    sys.exit(0)
+
+def get_bot_info():
+    """Fetch bot username and ID once at startup"""
+    global BOT_USERNAME, BOT_ID
+    try:
+        me = bot.get_me()
+        BOT_USERNAME = me.username
+        BOT_ID = me.id
+        logger.info(f"Bot Info: @{BOT_USERNAME} (ID: {BOT_ID})")
+    except Exception as e:
+        logger.error(f"Failed to get bot info: {e}")
+        BOT_USERNAME = "unknown"
+        BOT_ID = "unknown"
+
+def print_startup_banner():
+    """Print a cool startup banner"""
+    banner = f"""
+╔══════════════════════════════════════════════════════════╗
+║                                                          ║
+║     {BOT_NAME} BOT STARTED SUCCESSFULLY!     ║
+║                                                          ║
+║  Version     : 2.0 (Advanced Production Ready)          ║
+║  Started at  : {START_TIME.strftime('%d %B %Y, %I:%M %p')}           ║
+║  Bot         : @{BOT_USERNAME or 'Loading...'}                           ║
+║  Status      : ONLINE & READY FOR ACTION 🔥              ║
+║                                                          ║
+╚══════════════════════════════════════════════════════════╝
+    """.strip()
+    print(banner)
+    logger.info("Startup banner displayed")
+
+def run_bot():
+    """Main bot running function with crash recovery"""
+    global START_TIME
+    attempt = 0
+    max_retries = 5
+    
+    while attempt < max_retries:
+        attempt += 1
+        try:
+            logger.info(f"Starting polling attempt {attempt}/{max_retries}...")
+            bot.infinity_polling(
+                none_stop=True,
+                interval=1,
+                timeout=20,
+                long_polling_timeout=20
+            )
+        except KeyboardInterrupt:
+            signal_handler(None, None)
+        except Exception as e:
+            logger.error(f"Bot crashed (attempt {attempt}): {str(e)}")
+            if attempt < max_retries:
+                wait = 10 * attempt
+                logger.info(f"Restarting in {wait} seconds...")
+                time.sleep(wait)
+                START_TIME = datetime.now()  # Reset uptime on restart
+            else:
+                logger.critical("Max restart attempts reached. Exiting.")
+                sys.exit(1)
 
 if __name__ == "__main__":
-    logger.info("【 𝗟𝗢𝗦𝗜𝗘 】 Bot is starting...")
+    # Register signal handler for graceful shutdown
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
+    
+    logger.info("Initializing Losie Bot...")
+    
+    # Initialize database
     init_db()
-    logger.info("Database initialized. Bot going online!")
+    
+    # Get bot info
+    get_bot_info()
+    
+    # Print cool banner
+    print_startup_banner()
+    
+    # Import handlers (to register them)
     try:
-        bot.infinity_polling(none_stop=True, interval=0)
+        import handlers.start_handler
+        import handlers.message_handler
+        import handlers.payment_handler
+        import handlers.admin_handler
+        logger.info("All handlers loaded successfully")
     except Exception as e:
-        logger.error(f"Bot crashed: {e}")
-
-from handlers.payment_handler import send_stars_invoice, send_nagad_payment_info, show_access_status
-
-@bot.message_handler(func=lambda m: m.text == "⭐ Pay with Telegram Stars")
-def handle_stars_payment(message):
-    send_stars_invoice(message.chat.id)
-
-@bot.message_handler(func=lambda m: m.text == "💸 Nagad - 100৳ (30 Days)")
-def handle_nagad_30(message):
-    send_nagad_payment_info(message.chat.id, 100, 30)
-
-@bot.message_handler(func=lambda m: m.text == "💸 Nagad - 400৳ (1 Year)")
-def handle_nagad_year(message):
-    send_nagad_payment_info(message.chat.id, 400, 365)
-
-@bot.message_handler(func=lambda m: m.text == "🆓 Access Status")
-def handle_status(message):
-    show_access_status(message.chat.id)
-
-@bot.message_handler(func=lambda m: m.text == "🔙 Back to Payment Options")
-def back_to_payment(message):
-    from handlers.payment_handler import show_payment_options
-    show_payment_options(message.chat.id)
-
-# Telegram Stars সাকসেসফুল পেমেন্ট
-@bot.successful_payment_handler()
-def successful_stars_payment(message):
-    user_id = message.chat.id
-    stars = message.successful_payment.total_amount  # 1 star = 1 unit
-    days_to_add = stars
+        logger.critical(f"Failed to load handlers: {e}")
+        sys.exit(1)
     
-    subscription_service.add_access_days(user_id, days_to_add)
-    
-    bot.send_message(user_id, f"🎉 ধন্যবাদ! পেমেন্ট সফল হয়েছে!\n⭐ {stars} Stars = {days_to_add} দিন প্রিমিয়াম আনলক হয়েছে 🔥\nএখন উপভোগ করুন!")
-
-@bot.pre_checkout_query_handler(func=lambda q: True)
-def pre_checkout_stars(query):
-    bot.answer_pre_checkout_query(query.id, ok=True)
+    # Start the bot with auto-restart
+    run_bot()
