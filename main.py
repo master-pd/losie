@@ -3,6 +3,9 @@ import signal
 import sys
 import time
 from datetime import datetime
+# bot শুরু হওয়ার আগে
+from config.master import print_active_status
+print_active_status()  # কোন কোন জেনারেটর/ফাইল চালু আছে দেখাবে
 
 from bot.instance import bot
 from database.repository import init_db
