@@ -7,6 +7,10 @@ from config.settings import PREMIUM_CATEGORIES, BOT_NAME, ADMIN_USERNAME, NAGAD_
 from handlers.payment_handler import show_payment_options  # আমরা নতুন পেমেন্ট হ্যান্ডলার বানাব
 from handlers.menu_handler import show_main_menu
 import datetime
+from ai.generator import GirlReplyGenerator
+
+# গ্লোবাল ইনিস্ট্যান্স (একবারই তৈরি হবে, মেমরি সেভ করবে)
+reply_generator = GirlReplyGenerator(memory_size=45)  # তোমার ক্লাসের নাম ও প্যারামিটার অনুযায়ী
 
 subscription_service = SubscriptionService()
 
