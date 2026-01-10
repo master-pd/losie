@@ -7,10 +7,8 @@ from config.settings import PREMIUM_CATEGORIES, BOT_NAME, ADMIN_USERNAME, NAGAD_
 from handlers.payment_handler import show_payment_options  # আমরা নতুন পেমেন্ট হ্যান্ডলার বানাব
 from handlers.menu_handler import show_main_menu
 import datetime
-from ai.generator import GirlReplyGenerator
-
-# গ্লোবাল ইনিস্ট্যান্স (একবারই তৈরি হবে, মেমরি সেভ করবে)
-reply_generator = GirlReplyGenerator(memory_size=45)  # তোমার ক্লাসের নাম ও প্যারামিটার অনুযায়ী
+from config.master import get_response_file_paths, get_ai_generator_modules
+from utils.ai_reply_manager import get_random_ai_reply  
 
 subscription_service = SubscriptionService()
 
@@ -90,12 +88,13 @@ Get ready to feel the heat 🔥😈
             return
         
         response_type = current_type if current_type in ["free", "premium"] else "free"
-        response = get_random_response(response_type)
+        content = get_random_ai_reply()
     
     # রেসপন্স পাঠানো
     try:
         if response["type"] == "text":
-            bot.send_message(message.chat.id, response["content"])
+            bot.send_message(message.chat.id, content)
+            # bot.send_message(message.chat.id, response["content"])
         elif response["type"] == "video":
             bot.send_video(
                 message.chat.id,
