@@ -15,7 +15,7 @@ def get_random_ai_reply():
     if gen_name not in _generator_instances:
         try:
             module = importlib.import_module(f"ai.{gen_name}_generator")
-            gen_class = getattr(module, "GeneratorClass")
+            gen_class = getattr(module, "GirlReplyGenerator")
             _generator_instances[gen_name] = gen_class()
         except Exception as e:
             return f"জেনারেটর লোড করতে সমস্যা: {str(e)}"
