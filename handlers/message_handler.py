@@ -40,7 +40,7 @@ def handle_all_messages(message):
         action = category_map[text]
         
         if action == "payment":
-            show_payment_options(message.chat.id)  # নতুন পেমেন্ট মেনু
+            show_payment_options(message.chat.id)
             return
         
         if action == "info":
@@ -72,41 +72,25 @@ Get ready to feel the heat 🔥😈
         update_category(user_id, action)
         
         # প্রিমিয়াম চেক
-        if action == "premium" and not subscription_service.is_active(user_id):
+        if action in PREMIUM_CATEGORIES and not subscription_service.is_active(user_id):
             show_payment_options(message.chat.id)
             return
-        
-        response = get_random_response(action)
     
-    else:
-        # নরমাল চ্যাট চলছে
-        user = get_user(user_id)
-        current_type = user["current_category"] if user else "free"
-        
-        if current_type == "premium" and not subscription_service.is_active(user_id):
-            show_payment_options(message.chat.id)
-            return
-        
-        response_type = current_type if current_type in ["free", "premium"] else "free"
-        content = get_random_ai_reply()
+    # নরমাল চ্যাট বা ক্যাটাগরি সিলেক্টের পর চ্যাট চলবে
+    user = get_user(user_id)
+    current_type = user["current_category"] if user else "free"
     
-    # রেসপন্স পাঠানো
+    if current_type in PREMIUM_CATEGORIES and not subscription_service.is_active(user_id):
+        show_payment_options(message.chat.id)
+        return
+    
+    # AI generator থেকে রিপ্লাই নেওয়া
     try:
-        if response["type"] == "text":
-            bot.send_message(message.chat.id, content)
-            # bot.send_message(message.chat.id, response["content"])
-        elif response["type"] == "video":
-            bot.send_video(
-                message.chat.id,
-                response["content"],
-                caption="Enjoy this hot video exclusively for you 🔥💦"
-            )
-        elif response["type"] == "voice":
-            bot.send_voice(
-                message.chat.id,
-                response["content"],
-                caption="My naughty voice just for you 🎤😈"
-            )
+        content = get_random_ai_reply()  # এটাই তোমার আনলিমিটেড র্যান্ডম রিপ্লাই দিবে
+        
+        # সবসময় টেক্সট হিসেবে পাঠানো (কারণ generator শুধু টেক্সট দেয়)
+        bot.send_message(message.chat.id, content)
+    
     except Exception as e:
         bot.send_message(message.chat.id, "উফ! কিছু একটা গন্ডগোল হয়েছে। আবার ট্রাই করো 🔥")
-        print(f"Media send error: {e}")
+        print(f"AI Reply Error: {e}")
