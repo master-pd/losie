@@ -11,7 +11,7 @@
 # উদাহরণ: "girl_reply" → ai/girl_reply_generator.py
 # -------------------------------------------------------------------------
 ACTIVE_AI_GENERATORS = [
-    "genaretor",           # GirlReplyGenerator (আনলিমিটেড টেক্সট রিপ্লাই)
+    "generetor",           # GirlReplyGenerator (আনলিমিটেড টেক্সট রিপ্লাই)
     # নতুন জেনারেটর যোগ করতে চাইলে এখানে লাইন যোগ করো
     # "ultra_dirty",
     # "romantic_whisper",
