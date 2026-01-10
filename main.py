@@ -41,16 +41,16 @@ def get_bot_info():
 def print_startup_banner():
     """Print a cool startup banner"""
     banner = f"""
-╔══════════════════════════════════════════════════════════╗
-║                                                          ║
-║     {BOT_NAME} BOT STARTED SUCCESSFULLY!     ║
-║                                                          ║
-║  Version     : 2.0 (Advanced Production Ready)          ║
-║  Started at  : {START_TIME.strftime('%d %B %Y, %I:%M %p')}           ║
-║  Bot         : @{BOT_USERNAME or 'Loading...'}                           ║
-║  Status      : ONLINE & READY FOR ACTION 🔥              ║
-║                                                          ║
-╚══════════════════════════════════════════════════════════╝
+╔═══════════════════════════════════════════════════════╗
+║                                                                 ║
+║     {BOT_NAME} BOT STARTED SUCCESSFULLY!                        ║
+                                                                 
+   Version     : 2.0 (Advanced Production Ready)                  
+   Started at  : {START_TIME.strftime('%d %B %Y, %I:%M %p')}      
+   Bot         : @{BOT_USERNAME or 'Loading...'}                  
+║  Status      : ONLINE & READY FOR ACTION 🔥                     ║
+║                                                                 ║
+╚═══════════════════════════════════════════════════════╝
     """.strip()
     print(banner)
     logger.info("Startup banner displayed")
